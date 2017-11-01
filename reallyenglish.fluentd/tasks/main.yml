@@ -1,0 +1,128 @@
+---
+# tasks file for ansible-role-fluentd
+
+- include_vars: "{{ ansible_os_family }}.yml"
+
+- include: "install-{{ ansible_os_family }}.yml"
+
+- name: Ensure fluentd.conf.d exists
+  file:
+    path: "{{ fluentd_config_fragment_dir }}"
+    state: directory
+    mode: 0755
+
+- name: Ensure buffer directory exists
+  file:
+    path: "{{ fluentd_buffer_path }}"
+    state: directory
+    mode: 0755
+    owner: "{{ fluentd_user }}"
+    group: "{{ fluentd_group }}"
+
+- name: Ensure unix pipe directory exists
+  file:
+    path: "{{ fluentd_unix_pipe_dir }}"
+    state: directory
+    mode: 0755
+    owner: "{{ fluentd_user }}"
+    group: "{{ fluentd_group }}"
+
+- name: Create FIFO for communicating from localhost
+  command: "mkfifo -m 660 {{ fluentd_unix_pipe_dir }}/fluentd.sock"
+  args:
+    creates: "{{ fluentd_unix_pipe_dir }}/fluentd.sock"
+
+- name: Ensure pipe permission is 660
+  file:
+    path: "{{ fluentd_unix_pipe_dir }}/fluentd.sock"
+    owner: "{{ fluentd_user }}"
+    group: "{{ fluentd_group }}"
+
+# - name: Ensure certs_dir exists
+#   file:
+#     path: "{{ fluentd_certs_dir }}"
+#     state: directory
+#     mode: 0755
+#
+# - name: Install ca_cert.pem
+#   template:
+#     src: ca_cert.pem.j2
+#     dest: "{{ fluentd_certs_dir }}/ca_cert.pem"
+#     mode: 0644
+#     owner: "{{ fluentd_user }}"
+#     group: "{{ fluentd_group }}"
+#     validate: openssl x509 -noout -in %s
+#   when:
+#     - fluentd_ca_cert is defined
+#     - fluentd_ca_cert != ''
+#
+# - assert:
+#     msg: "When `fluentd_ca_key` is used, you need to set `fluentd_ca_private_key_passphrase`"
+#     that:
+#       - fluentd_ca_private_key_passphrase != ""
+#   when:
+#     - fluentd_ca_key is defined
+#     - fluentd_ca_key != ''
+#
+# - name: Install ca_key.pem
+#   template:
+#     src: ca_key.pem.j2
+#     dest: "{{ fluentd_certs_dir }}/ca_key.pem"
+#     mode: 0440
+#     owner: "{{ fluentd_user }}"
+#     group: "{{ fluentd_group }}"
+#     validate: openssl rsa -check -noout -passin env:FLUENTD_CA_PASS -in %s
+#   environment:
+#     FLUENTD_CA_PASS: "{{ fluentd_ca_private_key_passphrase }}"
+#   when:
+#     - fluentd_ca_key is defined
+#     - fluentd_ca_key != ''
+
+#- include: configure-leaf.yml
+
+#- include: configure-forwarder.yml
+
+
+- name: Register installed plugins
+  shell: "{{ fluentd_gem_bin }} list"
+  register: gem_list
+  changed_when: False
+
+- name: Install fluent plugins
+  command: "{{ fluentd_gem_bin }} install {{ item }}"
+  with_items: "{{ fluentd_plugins_to_install }}"
+  when: not ( gem_list.stdout | search(item) )
+  notify: Restart fluentd
+
+- name: Create config fragments
+  template:
+    src: fragment.conf.j2
+    dest: "{{ fluentd_config_fragment_dir }}/{{ item.key }}.conf"
+    # --dry-run failed if the flagment has a @label but no corresponding label
+    # section with "[error]: dry run failed: @forwarded label not found"
+    #
+    # validate: "fluentd --dry-run --config %s"
+  with_dict: "{{ fluentd_configs }}"
+  when: item.value.enabled
+  notify: Restart fluentd
+
+- name: Remove config fragments
+  file:
+    path: "{{ fluentd_config_fragment_dir }}/{{ item.key }}.conf"
+    state: absent
+  with_dict: "{{ fluentd_configs }}"
+  when: not item.value.enabled
+  notify: Restart fluentd
+
+- name: Create fluent.conf
+  template:
+    src: fluent.conf.j2
+    dest: "{{ fluentd_config_file }}"
+    validate: "{{ fluentd_bin }} --dry-run --config %s"
+  notify: Restart fluentd
+
+- name: Start fluentd
+  service:
+    name: "{{ fluentd_service_name }}"
+    enabled: true
+    state: started

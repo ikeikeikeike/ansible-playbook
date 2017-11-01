@@ -1,0 +1,5 @@
+- name: Install java to server
+  yum: "name=java-{{ java_version }}-openjdk-headless state=present"
+
+- name: Setting default
+  command: "alternatives --set java /usr/lib/jvm/jre-{{ java_version }}-openjdk.x86_64/bin/java"

@@ -1,0 +1,34 @@
+systemd_config: |
+    [Unit]
+    Description=Running {{ app_name }} Application on Systemd
+    After=network.target
+
+    [Service]
+    Type=simple
+
+    User={{ username }}
+    Group={{ username }}
+
+    EnvironmentFile=/etc/default/{{ app_name }}
+
+    WorkingDirectory=/apps/{{ app_name }}
+
+    ExecStart=/apps/{{ app_name }}/bin/{{ app_name }} start
+    ExecStop=/apps/{{ app_name }}/bin/{{ app_name }} stop
+
+    LimitNOFILE=65536
+
+    Restart=on-failure
+    RestartSec=5
+
+    RemainAfterExit=yes
+    SyslogIdentifier={{ app_name }}
+
+    [Install]
+    WantedBy=multi-user.target
+
+
+systemd_envs: |
+    PORT=5700
+    LANG=en_US.UTF-8
+    LC_ALL=en_US.UTF-8

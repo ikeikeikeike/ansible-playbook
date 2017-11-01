@@ -1,0 +1,82 @@
+- name: Prepared for Install Docker
+  apt: name={{ item }} state=present update_cache=yes
+  with_items:
+    - aptitude
+    - curl
+    - apt-transport-https
+    - ca-certificates
+    - software-properties-common
+
+- apt: update_cache=yes upgrade=full cache_valid_time=31556926  # No upgrade until 1 year passess
+
+- name: Install Docker key
+  apt_key:
+    keyserver: ha.pool.sks-keyservers.net
+    id: 58118E89F3A912897C070ADBF76221572C52609D
+
+- name: Install Docker repo
+  apt_repository:
+    repo: deb https://apt.dockerproject.org/repo ubuntu-xenial main
+    state: present
+
+- command: uname -r
+  register: unamer
+
+- command: uname -s
+  register: unames
+
+- command: uname -m
+  register: unamem
+
+- name: Install Docker
+  apt: name={{ item }} state=present update_cache=yes
+  with_items:
+    - linux-image-extra-{{ unamer.stdout }}
+    - linux-image-extra-virtual
+    - docker-engine
+    - docker-compose
+
+- name: Ensure docker is started and enabled to start at boot
+  service: name=docker state=started enabled=yes
+
+- stat: path=/usr/local/bin/docker-compose
+  register: has_compose
+
+- stat: path=/usr/local/bin/drone
+  register: has_drone
+
+- name: Create local bin directory if it doesn't exist
+  file: path=/usr/local/bin state=directory owner=root group=root mode=0755
+
+- name: Download drone-compose tarball and extract to local bin
+  get_url:
+      url: "https://github.com/docker/compose/releases/download/1.11.2/docker-compose-{{ unames.stdout }}-{{ unamem.stdout }}"
+      dest: /usr/local/bin/docker-compose
+      mode: 0755
+  when: not has_compose.stat.exists
+
+- name: Download drone-compose tarball and extract to local bin
+  shell: curl http://downloads.drone.io/release/linux/amd64/drone.tar.gz | tar zx
+  when: not has_drone.stat.exists
+
+- command: mv drone /usr/local/bin/drone
+  when: not has_drone.stat.exists
+
+- command: chmod 0755 /usr/local/bin/drone
+  when: not has_drone.stat.exists
+
+- file: path=/srv/containers state=directory owner=root group=root mode=0755
+- file: path=/srv/containers/docker-compose.yml state=touch owner=root group=sys mode=0555
+- name: Configure Docker compose
+  notify: start drone
+  blockinfile:
+    dest: /srv/containers/docker-compose.yml
+    insertafter: EOF
+    content: |
+
+        {{ drone_docker_compose }}
+
+- name: build and run drone in docker
+  shell: (cd /srv/containers && /usr/local/bin/docker-compose up -d --build)
+
+

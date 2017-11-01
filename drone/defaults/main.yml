@@ -1,0 +1,8 @@
+drone_driver: sqlite3
+drone_datasource: /var/lib/drone/drone.sqlite
+
+drone_github_enterprise: |
+    ""
+
+drone_docker_compose: |
+    ""

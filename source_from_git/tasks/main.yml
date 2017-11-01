@@ -1,0 +1,16 @@
+- name: send key to remote deploy user
+  copy:
+    content: "{{ users.ghe.id_rsa }}"
+    dest: "{{ source_from_git_priv_key }}"
+    mode: 0600
+    owner: "{{ username }}"
+    group: "{{ username }}"
+
+- name: Download source from git
+  git:
+    repo: "{{ source_from_git_repo }}"
+    dest: "{{ source_from_git_dest }}"
+    key_file: "{{ source_from_git_priv_key }}"
+    version: master
+    update: yes
+    accept_hostkey: yes

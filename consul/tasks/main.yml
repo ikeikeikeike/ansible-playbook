@@ -1,0 +1,21 @@
+- name: copy and unarchive files
+  unarchive:
+      # src: https://github.com/fujiwara/stretcher/releases/download/v0.8.0/stretcher-v0.8.0-linux-amd64.zip  # S3 v2-signature(ap-northeast-1)
+      src: https://github.com/ikeikeikeike/stretcher/releases/download/v0.8.0/stretcher-v0.8.0-linux-amd64.zip  # S3 v4-signature(ap-northeast-2)
+      dest: /usr/local/bin
+      remote_src: True
+
+- file:
+    src: /usr/local/bin/stretcher-v0.8.0-linux-amd64
+    dest: /usr/local/bin/stretcher
+    state: link
+
+- name: force restart consul
+  when: ansible_os_family == "RedHat"
+  shell: /usr/bin/pkill -9 consul && /bin/sleep 5 && /sbin/start consul && /bin/sleep 5
+  ignore_errors: True
+
+- name: force restart consul
+  when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+  shell: /usr/bin/pkill -9 consul && /bin/sleep 5 && systemctl start consul && /bin/sleep 5
+  ignore_errors: True

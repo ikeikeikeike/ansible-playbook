@@ -1,0 +1,22 @@
+---
+
+- name: Ensure fluentd is installed
+  pkgng:
+    name: rubygem-fluentd
+    state: present
+
+- name: Install missing gems
+  gem:
+    name: "{{ item }}"
+    state: present
+    user_install: no
+  with_items:
+    - tzinfo-data
+
+# this should be removed after 0.14.x released
+- name: Install string-scrub
+  gem:
+    name: string-scrub
+    version: 0.0.5
+    state: present
+    user_install: no

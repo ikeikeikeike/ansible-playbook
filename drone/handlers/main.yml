@@ -1,0 +1,6 @@
+---
+- name: start drone
+  shell: (cd /srv/containers && /usr/local/bin/docker-compose up -d --build)
+
+- name: restart drone
+  shell: (cd /srv/containers && /usr/local/bin/docker-compose restart)

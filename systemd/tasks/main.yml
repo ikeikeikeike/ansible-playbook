@@ -1,0 +1,33 @@
+- file: path="/etc/systemd/system/{{ app_name }}.service" state=touch owner=root group=sys mode=0644
+- name: Configure Systemd configuration
+  blockinfile:
+    dest: "/etc/systemd/system/{{ app_name }}.service"
+    insertafter: EOF
+    content: |
+
+        {{ systemd_config }}
+
+
+- file: path=/etc/default/{{ app_name }} state=touch owner=root group=sys mode=0444
+- name: Configure Systemd environment
+  blockinfile:
+    dest: "/etc/default/{{ app_name }}"
+    insertafter: EOF
+    content: |
+
+        {{ systemd_envs }}
+
+
+# - name: start {{ app_name }} service
+  # systemd:
+    # state: started
+    # name: "{{ app_name }}"
+    # daemon_reload: yes
+    # enabled: yes
+
+- name: restart {{ app_name }} service
+  systemd:
+    name: "{{ app_name }}"
+    state: restarted
+    daemon_reload: yes
+    enabled: yes

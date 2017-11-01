@@ -1,0 +1,9 @@
+---
+
+# Configs
+elao_supervisor_configs_exclusive: "{{ elao.exclusive|default(false) if (elao is defined) else false }}"
+elao_supervisor_configs_dir:       /etc/supervisor.d
+elao_supervisor_configs_template:  configs/empty.conf.j2
+elao_supervisor_configs:           []
+
+elao_supervisor_version: latest

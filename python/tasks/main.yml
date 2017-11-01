@@ -1,0 +1,18 @@
+- name: Install Python
+  when: ansible_os_family == "RedHat"
+  yum: name={{ item }} state=present
+  with_items:
+    - python35-devel
+    - python35-pip
+    - libxml2-devel
+    - libxslt-devel
+    - libffi-devel
+
+- name: Install virtualenv
+  shell: /usr/bin/pip-3.5 install virtualenv
+
+- file: path=/apps/{{ app_name }} state=directory owner={{ username }} group={{ username }} mode=0755
+- name: make venv
+  shell: cd /apps/{{ app_name }} && /usr/local/bin/virtualenv venv
+  sudo_user: "{{ username }}"
+  ignore_errors: True

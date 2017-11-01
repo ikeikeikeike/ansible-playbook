@@ -1,0 +1,2 @@
+- name: Run migration
+  shell: (cd "{{ project_migration_dir }}" && flyway migrate)

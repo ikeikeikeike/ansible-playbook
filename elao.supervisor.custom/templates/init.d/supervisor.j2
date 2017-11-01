@@ -1,0 +1,89 @@
+#!/bin/bash
+#
+# supervisord   This scripts turns supervisord on
+#
+# Author:       Mike McGrath <mmcgrath@redhat.com> (based off yumupdatesd)
+#
+# chkconfig:    - 95 04
+#
+# processname:  supervisord
+# config: /etc/supervisord.conf
+# pidfile: /var/run/supervisord.pid
+{% if ansible_os_family in ['RedHat','CentOS'] %}
+# description:  supervisor is a process control utility.  It has a web based
+#               xmlrpc interface as well as a few other nifty features.
+{% else %}
+### BEGIN INIT INFO
+# Provides:          supervisord
+# Required-Start:
+# Required-Stop:
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: supervisord
+# description:  supervisor is a process control utility.  It has a web based
+#               xmlrpc interface as well as a few other nifty features.
+### END INIT INFO
+{% endif %}
+#
+#
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+
+# source function library
+{% if ansible_os_family in ['RedHat','CentOS'] %}
+. /etc/rc.d/init.d/functions
+{% else %}
+. /lib/lsb/init-functions
+{% endif %}
+
+
+RETVAL=0
+
+start() {
+        echo -n $"Starting supervisord: "
+
+        {% if ansible_os_family in ['RedHat','CentOS'] %}
+            daemon /usr/local/bin/supervisord -c /etc/supervisord.conf
+        {% else %}
+            /usr/local/bin/supervisord -c /etc/supervisord.conf
+        {% endif %}
+
+        RETVAL=$?
+        echo
+        [ $RETVAL -eq 0 ] && touch /var/lock/subsys/supervisord
+}
+
+stop() {
+        echo -n $"Stopping supervisord: "
+        killproc supervisord
+        echo
+        [ $RETVAL -eq 0 ] && rm -f /var/lock/subsys/supervisord
+}
+
+restart() {
+        stop
+        start
+}
+
+case "$1" in
+  start)
+        start
+        ;;
+  stop)
+        stop
+        ;;
+  restart|force-reload|reload)
+        restart
+        ;;
+  condrestart)
+        [ -f /var/lock/subsys/supervisord ] && restart
+        ;;
+  status)
+        status supervisord
+        RETVAL=$?
+        ;;
+  *)
+        echo $"Usage: $0 {start|stop|status|restart|reload|force-reload|condrestart}"
+        exit 1
+esac
+
+exit $RETVAL

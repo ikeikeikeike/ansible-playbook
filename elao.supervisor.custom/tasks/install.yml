@@ -1,0 +1,48 @@
+# tasks file for supervisor
+---
+
+- name: install | supervisor (specific version)
+  pip:
+    name: supervisor
+    version: "{{ elao_supervisor_version }}"
+  when: elao_supervisor_version != 'latest'
+
+- name: install | supervisor (latest version)
+  pip:
+    name: supervisor
+    state: "{{ elao_supervisor_version }}"
+  when: elao_supervisor_version == 'latest'
+
+- name: make conf.d directory
+  file: "path={{ elao_supervisor_configs_dir }}
+         state=directory
+         owner=root
+         group=root
+         mode=0755
+        "
+
+- file: path=/var/log/supervisor state=directory owner=root group=root mode=0755
+- template:
+    src: supervisor.conf.j2
+    dest: /etc/supervisord.conf
+
+- name: add a new string at the end of the file
+  blockinfile:
+    dest: /etc/supervisord.conf
+    insertafter: EOF
+    marker: "; {mark} ANSIBLE MANAGED BLOCK"
+    content: |
+      [include]
+      files = {{ elao_supervisor_configs_dir }}/*.conf
+
+- name: configure | initd | update script
+  template:
+    src: init.d/supervisor.j2
+    dest: /etc/init.d/supervisord
+    mode: 0755
+
+- name: supervisord started
+  service:
+    name: supervisord
+    state: started
+    enabled: yes

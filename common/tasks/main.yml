@@ -1,0 +1,46 @@
+# Utility
+
+- name: Group-Install system utility
+  when: ansible_os_family == "RedHat"
+  yum: name={{ item }} state=present
+  with_items:
+    - "@Development Tools"
+
+- name: Install system utility
+  when: ansible_os_family == "RedHat"
+  yum: name={{ item }} state=present
+  with_items:
+    - epel-release
+    - htop
+    - mlocate
+    - git-all
+    - mysql  # mysql command
+    - mysql-devel
+    - telnet
+    # - sshguard  # TODO:
+
+- name: Install system utility
+  when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+  apt: name={{ item }} state=present update_cache=yes
+  with_items:
+    - htop
+    - git-core
+    - aptitude
+    - mysql-client
+    # - sshguard
+
+- name: Name hostname from inventory
+  hostname:
+    name: "{{ ec2_tag_Name }}"
+
+- name: Upgrade all packages
+  apt: upgrade=full update_cache=yes cache_valid_time=31556926  # No upgrade until 1 year passess
+  when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+
+- name: set timezone to Asia/Tokyo
+  timezone:
+    name: Asia/Tokyo
+
+#- name: Upgrade all packages
+#  yum: name='*' state=latest update_cache=yes cache_valid_time=31556926  # No upgrade until 1 year passess
+#  when: ansible_os_family == "RedHat"
