@@ -17,7 +17,6 @@
     - mysql  # mysql command
     - mysql-devel
     - telnet
-    # - sshguard  # TODO:
 
 - name: Install system utility
   when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
@@ -27,7 +26,7 @@
     - git-core
     - aptitude
     - mysql-client
-    # - sshguard
+    - python-pip
 
 - name: Name hostname from inventory
   hostname:
