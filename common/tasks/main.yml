@@ -31,7 +31,7 @@
 
 - name: Name hostname from inventory
   hostname:
-    name: "{{ ec2_tag_Name }}"
+    name: "{{ ec2_tag_Name | default(app_name) }}"
 
 - name: Upgrade all packages
   apt: upgrade=full update_cache=yes cache_valid_time=31556926  # No upgrade until 1 year passess

@@ -1,5 +1,13 @@
 - name: Install java to server
+  when: ansible_os_family == "RedHat"
   yum: "name=java-{{ java_version }}-openjdk-headless state=present"
 
 - name: Setting default
+  when: ansible_os_family == "RedHat"
   command: "alternatives --set java /usr/lib/jvm/jre-{{ java_version }}-openjdk.x86_64/bin/java"
+
+- name: Install java to server
+  when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+  apt: name={{ item }} state=present update_cache=yes
+  with_items:
+    - openjdk-8-jre-headless
